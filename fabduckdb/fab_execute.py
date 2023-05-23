@@ -3,7 +3,7 @@ from collections import deque
 from typing import Dict, List, Optional, Tuple
 
 from duckdb import DuckDBPyConnection
-
+import duckdb
 from fabduckdb.fab_functions import ContextObject, _consume_functions
 from fabduckdb.fab_statements import _consume_statements
 from fabduckdb.splitter import split_into_statements
@@ -14,7 +14,11 @@ DONTPATCH = False
 logger = logging.getLogger(__name__)
 
 
-def register():
+def registerfab():
+    """Patches DuckDBPyConnection with a custom executor. The original executor is saved, and called by the custom executor.
+    Also replaces duckdb.execute() with duckdb.default_connection.execute(), which ensures duckbdb.execute() uses the custom executor path, same as other connections.
+    """
+
     global PATCHED
     if PATCHED or DONTPATCH:
         return
@@ -26,6 +30,10 @@ def register():
             DuckDBPyConnection.execute_decorated = DuckDBPyConnection.execute  # type: ignore
 
         DuckDBPyConnection.execute = fab_execute
+
+        # This replaces execute with a Python-native function.  execute, so it's patchable.
+        duckdb.execute = lambda sql: duckdb.default_connection.execute(sql)
+
         PATCHED = True
 
 
@@ -50,7 +58,7 @@ ready_to_unregister = False
 
 def fab_execute(self, query: str, parameters: object = None, multiple_parameter_sets: bool = False) -> DuckDBPyConnection:  # type: ignore
     """I am your captain now."""
-    register()
+    registerfab()
     global items_to_unregister
     global ready_to_unregister
 

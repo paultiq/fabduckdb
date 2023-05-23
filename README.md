@@ -37,16 +37,17 @@ create table xyz as (loop (select * from {{tablename}}) over (select tablename f
 
 ```
 import fabduckdb
-fabduckdb.register()
 query = "execute (select 'select * from range(' || x::varchar || ')' from range(3) t(x)) USING 'Union'"
 duckdb.connect().execute(query)
 ```
 
 - [Pseudo-Table Functions](function_examples.ipynb): Extracts and rewrites embedded functions.
 
+A con [duckdb.pyconnection] object is passed to every function. If generates_filepath is True, a filename [str] object is also passed.
+
 ```
 import fabduckdb
-fabduckdb.register_function("dfcreate", lambda rows, cols: pd.DataFrame(np.random.rand(rows, cols)), generates_filepath=False)
+fabduckdb.register_function("dfcreate", lambda rows, cols, con: pd.DataFrame(np.random.rand(rows, cols)), generates_filepath=False)
 
 duckdb.connect().execute("select * from dfcreate(3,4)").df()
 ```
@@ -55,7 +56,7 @@ duckdb.connect().execute("select * from dfcreate(3,4)").df()
 
 ```
 import fabduckdb
-fabduckdb.register_function("dfcreate", lambda rows, cols, filename: pd.DataFrame(np.random.rand(rows, cols)).to_parquet(filename), generates_filepath=True)
+fabduckdb.register_function("dfcreate", lambda rows, cols, filename, con: pd.DataFrame(np.random.rand(rows, cols)).to_parquet(filename), generates_filepath=True)
 duckdb.connect().execute("select * from dfcreate(3,4)").df()
 ```
 
@@ -71,7 +72,8 @@ The next step is likely to propose changes the DuckDB Python API that eliminate 
 
 ## Current Limitations
 
-- Only PyConnection.execute() calls are supported. And, instead of `duckdb.execute()`, use `duckdb.connect().execute()` or `duckdb.default_connection().execute()`
+- Functions have no visibility to CTEs or subqueries: Functions are executed first and the function is rewritten to use their output (either an DataFrame/similar object, or a file path).
+- Only PyConnection.execute() calls are supported. .sql() and pyrelations are not supported.
 
 ## To Do's
 
@@ -129,9 +131,7 @@ fabduckdb.wrap_execute(execute_decorator, append=False)
 
 For registered functions, Fab will execute the Python inline. Functions must be registered: eval() of arbitrary Python code is not supported (although could be):
 
-Assuming somefunction is registered with fab_duckdb.register("somefunction", somefunction, type="pandas")
-
-Transforms this statement:
+Assuming somefunction is registered with fab_duckdb.register_function, this transforms this statement:
 
 ```
 select * from somefunction(arguments)
@@ -199,10 +199,8 @@ transforms into the following statements:
 
 ```
 %load_ext magic_duckdb
-
-import fabduckdb
-fabduckdb.register()
 import duckdb
+import fabduckdb
 
 with duckdb.connect() as con:
     con.execute("install httpfs")

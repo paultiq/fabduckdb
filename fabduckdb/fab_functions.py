@@ -154,7 +154,7 @@ def extract_and_replace_functions(query) -> Tuple[str, Dict[str, ContextObject]]
     return query, subqueries
 
 
-def execute_allowlisted_function(functionname: str, params: str) -> object:
+def execute_allowlisted_function(functionname: str, params: str, con: object) -> object:
     logger.info(f"Running {functionname} against {params}")
     reg_function = registered_functions[functionname]
     function = reg_function.func
@@ -170,22 +170,26 @@ def execute_allowlisted_function(functionname: str, params: str) -> object:
     if isinstance(param_ast.body, ast.Constant):
         # Case: Single constant parameter
         param_value = ast.literal_eval(param_ast.body)
-        result = function(param_value)
+        con_args = {"con": con}
+        result = function(param_value, **con_args)
         return result
     elif isinstance(param_ast.body, ast.Tuple):
         # Case: Constant positional arguments
         args = [ast.literal_eval(arg) for arg in param_ast.body.elts]
-        result = function(*args)
+        con_args = {"con": con}
+        result = function(*args, **con_args)
         return result
     elif isinstance(param_ast.body, ast.Dict):
         # Case: Keyword arguments (kwargs)
         kwargs = {kw.arg: ast.literal_eval(kw.value) for kw in param_ast.body.keys}  # type: ignore
+        kwargs["con"] = con
         result = function(**kwargs)
         return result
     elif isinstance(param_ast.body, ast.Call):
         # Case: Mix of keyword and positional arguments
         kwargs = {kw.arg: ast.literal_eval(kw.value) for kw in param_ast.body.keywords}
         args = [ast.literal_eval(arg) for arg in param_ast.body.args]
+        kwargs["con"] = con
         result = function(*args, **kwargs)
         return result
 
@@ -200,7 +204,7 @@ def _consume_functions(query: str, con) -> Tuple[List[str], Dict[str, ContextObj
 
     for k, co in subqueries.items():
         logger.info(f"Executing subquery {co.functioncall}")
-        result = execute_allowlisted_function(co.functionname, co.params)
+        result = execute_allowlisted_function(co.functionname, co.params, con=con)
         co.data = result
 
     return ([newquery], subqueries)

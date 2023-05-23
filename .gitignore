@@ -160,3 +160,6 @@ cython_debug/
 #.idea/
 *.parquet
 *.code-workspace
+*.db
+*.db.wal
+scratch_examples.ipynb
