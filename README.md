@@ -26,7 +26,7 @@ duckdb.default_connection.execute(loopstatement).df()
 
 ## Details
 
-- [Loop Statements](loop_examples.ipynb): Iterates over a parameterized query, combining the results with the s a single a Jinja2 template
+- [Loop Statements](loop_examples.ipynb): Iterates over a the iteration statement, fed as parameters to the template (Jinja2) query
 
 ```
 loop (select * from {{tablename}}) over (select tablename from tableoftablenames) [USING 'None' | 'Union' | ...]
