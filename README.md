@@ -13,7 +13,7 @@ Fab intercepts and rewrites SQL statements called via PyConnection.execute(), ex
 ## Quick Start
 
 ```
-pip install 'fabduckdb @ git+https://github.com/paultiq/fabduckdb'
+%pip install 'fabduckdb @ git+https://github.com/paultiq/fabduckdb'
 import duckdb
 import fabduckdb
 
