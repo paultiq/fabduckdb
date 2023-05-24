@@ -131,7 +131,7 @@ def get_tokenlist(parsedquery):
 
 
 def _consume_statements(
-    query: str, con
+    query: str, con, params
 ) -> Tuple[Optional[List[str]], Dict[str, ContextObject]]:
     firstword = query.split(maxsplit=1)[0].upper()
     parsedquery = sqlparse.parse(query)

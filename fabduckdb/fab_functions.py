@@ -154,15 +154,26 @@ def extract_and_replace_functions(query) -> Tuple[str, Dict[str, ContextObject]]
     return query, subqueries
 
 
-def execute_allowlisted_function(functionname: str, params: str, con: object) -> object:
+def execute_allowlisted_function(
+    functionname: str, params: str, con: object, statement_params
+) -> object:
     logger.info(f"Running {functionname} against {params}")
     reg_function = registered_functions[functionname]
     function = reg_function.func
     # Define the parameter string
     param_string = f"f({params})"
 
+    if statement_params is not None:
+        subbed_param_string = param_string
+        for k, v in statement_params.items():
+            subbed_param_string = subbed_param_string.replace(f"${k}", str(v))
+
+        # Replace statement params with any parameters
+        logger.info(f"Params: {param_string} {subbed_param_string}")
+        param_string = subbed_param_string
+
     # Parse the parameter string into an AST
-    logger.info(f"Params: {param_string}")
+
     param_ast = ast.parse(param_string, mode="eval")
 
     # param_node = param_ast.body
@@ -194,7 +205,9 @@ def execute_allowlisted_function(functionname: str, params: str, con: object) ->
         return result
 
 
-def _consume_functions(query: str, con) -> Tuple[List[str], Dict[str, ContextObject]]:
+def _consume_functions(
+    query: str, con, params
+) -> Tuple[List[str], Dict[str, ContextObject]]:
     newquery, subqueries = extract_and_replace_functions(query)
 
     if subqueries is None or len(subqueries) == 0:
@@ -204,7 +217,9 @@ def _consume_functions(query: str, con) -> Tuple[List[str], Dict[str, ContextObj
 
     for k, co in subqueries.items():
         logger.info(f"Executing subquery {co.functioncall}")
-        result = execute_allowlisted_function(co.functionname, co.params, con=con)
+        result = execute_allowlisted_function(
+            co.functionname, co.params, con=con, statement_params=params
+        )
         co.data = result
 
     return ([newquery], subqueries)
