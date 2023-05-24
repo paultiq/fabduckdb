@@ -25,5 +25,5 @@ setup(
     keywords="DuckDB, Fabulous, Loops, Dynamic",
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
-    install_requires=["duckdb>=0.8.0", "sqlparse"],
+    install_requires=["duckdb>=0.8.0", "sqlparse", "jinja2"],
 )
