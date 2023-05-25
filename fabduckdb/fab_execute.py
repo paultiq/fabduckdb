@@ -122,6 +122,8 @@ def fab_execute(self, query: str, parameters: object = None, multiple_parameter_
 
         if len(DuckDBPyConnection._fabitems_to_unregister[self]) > 0:  # type: ignore
             for i in DuckDBPyConnection._fabitems_to_unregister[self]:  # type: ignore
+                logger.info(f"Unregistering {i}")
+
                 self.unregister(i)
             DuckDBPyConnection._fabitems_to_unregister[self] = []  # type: ignore
 

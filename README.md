@@ -74,6 +74,8 @@ The next step is likely to propose changes the DuckDB Python API that eliminate 
 
 - Functions have no visibility to CTEs or subqueries: Functions are executed first and the function is rewritten to use their output (either an DataFrame/similar object, or a file path).
 - Only PyConnection.execute() calls are supported. .sql() and pyrelations are not supported.
+- Objects created by functions are registered, and left registered until the next statement execution, as they can't be unregistered until they've been consumed.
+- Files created by functions are not yet deleted: need to come up with a way to specify the directory path and/or clean-up policy
 - Parameters:
   - Use named parameters: pass $name parameters in a Dict
   - Anonymous parameters won't rewrite properly, although they're fine for functions that don't need rewriting.
