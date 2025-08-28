@@ -4,9 +4,10 @@ from typing import Dict, List, Optional, Tuple
 
 from duckdb import DuckDBPyConnection
 import duckdb
-from fabduckdb.fab_functions import ContextObject, _consume_functions
-from fabduckdb.fab_statements import _consume_statements
-from fabduckdb.splitter import split_into_statements
+from .table_functions.fab_functions import ContextObject, _consume_functions
+
+# from fabduckdb.fab_statements import _consume_statements
+from .splitter import split_into_statements
 
 PATCHED = False
 DONTPATCH = False
@@ -24,7 +25,7 @@ def registerfab():
         return
     else:
         if not hasattr(DuckDBPyConnection, "execute_decorated"):
-            logger.info("Patching")
+            logger.debug("Patching")
 
             DuckDBPyConnection._execute_orig_ = DuckDBPyConnection.execute  # type: ignore
             DuckDBPyConnection.execute_decorated = DuckDBPyConnection.execute  # type: ignore
@@ -44,15 +45,9 @@ lasttokens = None
 def _consume(
     query: str, con, params
 ) -> Tuple[Optional[List[str]], Dict[str, ContextObject]]:
-    statements, context = _consume_statements(query, con, params)
+    statements, context = _consume_functions(query, con, params)
 
-    if statements is not None:
-        return statements, context
-    else:
-        # After doing any statement rewriting, see if there's any functions to replace
-        statements, context = _consume_functions(query, con, params)
-
-        return statements, context
+    return statements, context
 
 
 def process_top_level_statement(con, statement: str, params: object) -> object:
@@ -64,7 +59,7 @@ def process_top_level_statement(con, statement: str, params: object) -> object:
 
     while statementQueue:
         statement = statementQueue.popleft()
-        logger.info(f"Processing: {statement}")
+        logger.debug(f"Processing: {statement}")
 
         (new_statements, new_context) = _consume(statement, con=con, params=params)
 
@@ -74,7 +69,7 @@ def process_top_level_statement(con, statement: str, params: object) -> object:
                 if not v.is_file:
                     if v.data is None:
                         raise ValueError(f"{k} is None, cannot process")
-                    logger.info(f"Registering {k}")
+                    logger.debug(f"Registering {k}")
                     con.register(k, v.data)
                     DuckDBPyConnection._fabitems_to_unregister[con].append(k)  # type: ignore
                     # TODO: Delete any files
@@ -89,7 +84,7 @@ def process_top_level_statement(con, statement: str, params: object) -> object:
             # can't unregister them until the next statement: the data must be consumed first
 
         else:
-            logger.info(f"Rewrote: {statement} => {new_statements}")
+            logger.debug(f"Rewrote: {statement} => {new_statements}")
 
             list(map(statementQueue.appendleft, new_statements))
 
@@ -113,7 +108,7 @@ def fab_execute(
     # TODO: Don't split on semicolon
     statements = split_into_statements(query)
 
-    logger.info(f"# Statements: {len(statements)}, {statements}")
+    logger.debug(f"# Statements: {len(statements)}, {statements}")
     res = self
 
     if self not in DuckDBPyConnection._fabitems_to_unregister:  # type: ignore
@@ -124,7 +119,7 @@ def fab_execute(
 
         if len(DuckDBPyConnection._fabitems_to_unregister[self]) > 0:  # type: ignore
             for i in DuckDBPyConnection._fabitems_to_unregister[self]:  # type: ignore
-                logger.info(f"Unregistering {i}")
+                logger.debug(f"Unregistering {i}")
 
                 self.unregister(i)
             DuckDBPyConnection._fabitems_to_unregister[self] = []  # type: ignore

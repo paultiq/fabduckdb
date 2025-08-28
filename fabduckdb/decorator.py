@@ -29,5 +29,5 @@ def _wrap(funcname, newfunc, append: bool = False):
     setattr(DuckDBPyConnection, funcname, replacement_func)
 
 
-def wrap_execute(func, append: bool = False):
+def wrap_execute(func: callable, append: bool = False):
     _wrap(funcname="execute", newfunc=func, append=append)

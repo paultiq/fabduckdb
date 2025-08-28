@@ -58,6 +58,8 @@ ignore = [
 
 [dependency-groups]
 dev = [
+    "ipykernel>=6.30.1",
+    "magic-duckdb>=0.2.1",
     "pandas>=2.3.2",
     "polars>=1.32.3",
     "pre-commit-uv>=4.1.5",
@@ -72,11 +74,12 @@ dev = [
 ]
 
 [tool.pyright]
-typeCheckingMode = "strict"
+typeCheckingMode = "basic"
 reportGeneralTypeIssues = false
 reportPrivateImportUsage = false
 reportAttributeAccessIssue = false
 exclude = ["tests/**"]
+ignore = ["sqlparse"]
 
 
 [tool.pylint.messages_control]

@@ -27,6 +27,10 @@ repos:
         language: node
         pass_filenames: true
         additional_dependencies: ["pyright"]
+  # - repo: https://github.com/cidrblock/pylint-ruff-sync
+  #   rev: v25.07.18.000003
+  #   hooks:
+  #     - id: pylint-ruff-sync
   - repo: local
     hooks:
       - id: pylint
@@ -46,7 +50,7 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: pytest -n 6
+        entry: pytest --cov -n 6 --cov-report=term-missing 
         language: system
         types: [python]
         pass_filenames: false
