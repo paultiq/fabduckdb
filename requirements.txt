@@ -1,4 +1,0 @@
-duckdb>=0.8.0
-pandas
-pyarrow
-jinja2

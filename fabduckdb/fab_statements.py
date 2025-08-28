@@ -15,7 +15,9 @@ def threaded_statement(query: str):
     return None
 
 
-def execute_statement(query: str, tokens: list[sqlparse.tokens.Token], con) -> Tuple[Optional[List[str]], Dict[str, ContextObject]]:  # type: ignore
+def execute_statement(
+    query: str, tokens: list[sqlparse.tokens.Token], con
+) -> Tuple[Optional[List[str]], Dict[str, ContextObject]]:  # type: ignore
     # firsttoken=tokens[0].value.upper()
 
     if len(tokens) != 2 and len(tokens) != 4:
@@ -76,7 +78,9 @@ def find_loop_statements(parsedquery):
         return None
 
 
-def loop_statement(query: str, tokens: list[sqlparse.tokens.Token], con) -> Tuple[Optional[List[str]], Dict[str, ContextObject]]:  # type: ignore
+def loop_statement(
+    query: str, tokens: list[sqlparse.tokens.Token], con
+) -> Tuple[Optional[List[str]], Dict[str, ContextObject]]:  # type: ignore
     """Uses the OVER statement as parameters to the Jinja2 templatized statement"""
 
     firsttoken = tokens[0].value.upper()
@@ -84,13 +88,22 @@ def loop_statement(query: str, tokens: list[sqlparse.tokens.Token], con) -> Tupl
     if firsttoken != "LOOP":
         raise ValueError(f"Unexpected, must be a LOOP statement: {firsttoken}")
     else:
-        if len(tokens) % 2 != 0:
+        if len(tokens) != 3 and len(tokens) != 5:
             raise ValueError(
-                f"Unexpected Syntax: there should be an even number of tokens, but got {len(tokens)}: LOOP (statement) OVER (statement) [USING 'method']. Got {[t.value for t in tokens]}"
+                f"Unexpected Syntax: there should be an odd number of tokens: the LOOP (query) over (xyz) using (abc), but got {len(tokens)}: LOOP (statement) OVER (statement) [USING 'method']. Got {[t.value for t in tokens]}"
             )
         else:
             logger.info(f"Let's loopify {query}, with tokens {tokens}, {len(tokens)}")
 
+            loop_clause = tokens[1].value
+
+            assert tokens[2].value.upper() == "OVER", tokens[2].value.upper()
+
+            over_clause = tokens[3].value
+
+            if len(tokens) == 5:
+                assert tokens[4].value == "USING"
+                how_clause = tokens[5]
             arguments = {}
             for i in range(0, len(tokens) - 1, 2):
                 arguments[tokens[i].value.upper()] = tokens[i + 1].value

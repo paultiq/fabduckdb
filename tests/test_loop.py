@@ -9,8 +9,10 @@ def test_loop1():
     loopstatement = (
         "loop (select * from {{x}}) over (select x from (values('abc'), ('def')) t(x))"
     )
-    duckdb.default_connection.execute(createstatement)
-    df = duckdb.default_connection.execute(loopstatement).df()
+    with duckdb.connect() as con:
+        con.execute(createstatement)
+        df = con.execute(loopstatement).df()
+
     assert len(df) == 14
 
 

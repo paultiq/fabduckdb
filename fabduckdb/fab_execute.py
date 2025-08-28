@@ -85,7 +85,7 @@ def process_top_level_statement(con, statement: str, params: object) -> object:
                 params = {k: v for k, v in params.items() if str(k) in statement}
                 if len(params) == 0:
                     params = None
-            res = con.execute_decorated(query=statement, parameters=params, multiple_parameter_sets=False)  # type: ignore
+            res = con.execute_decorated(query=statement, parameters=params)  # type: ignore
             # can't unregister them until the next statement: the data must be consumed first
 
         else:
@@ -103,7 +103,9 @@ def convert_questionmark_parameters(statement):
     return statement
 
 
-def fab_execute(self, query: str, parameters: object = None, multiple_parameter_sets: bool = False) -> DuckDBPyConnection:  # type: ignore
+def fab_execute(
+    self, query: str, parameters: object = None, multiple_parameter_sets: bool = False
+) -> DuckDBPyConnection:  # type: ignore
     """I am your captain now."""
 
     registerfab()
