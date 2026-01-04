@@ -1,0 +1,64 @@
+name: Test and Coverage
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  # cancels superceded runs
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  LATEST_PY_VERSION: &latest '3.13'
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+        # test oldest & latest versions against ubuntu
+        # and one version against windows and macos
+        - { os: ubuntu-latest, python-version: "3.10" }
+        - { os: ubuntu-latest, python-version: *latest }
+        #- { os: ubuntu-latest, python-version: "3.14t" }
+        #- { os: ubuntu-latest, python-version: "pypy3.11" }
+        - { os: windows-latest, python-version: *latest }
+        - { os: macos-latest, python-version: *latest }
+    environment: test
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies 
+        run: uv sync
+      - name: Run tests with coverage and Build
+        env:
+          COVERAGE_PROCESS_START: ${{ github.workspace }}/.coveragerc
+        run: |
+          uv run pytest --verbose --cov --cov-report=term-missing --ignore=tests/extras
+          uv build
+      - name: Python Coverage Comment if main
+        if: ${{ github.ref == 'refs/heads/main' && matrix.python-version == env.LATEST_PY_VERSION && matrix.os == 'ubuntu-latest' }}
+        uses: py-cov-action/python-coverage-comment-action@v3.23
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
